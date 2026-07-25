@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { getGuardianApi } from '../../src/api/client';
 import { formatWhen } from '../../src/components/AlertListItem';
@@ -92,7 +92,16 @@ export default function AlertScreen() {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Fall — {alert.deviceId}</Text>
-          <StatusPill status={alert.status} />
+          <View style={styles.headerActions}>
+            <Pressable
+              style={styles.cameraButton}
+              onPress={() => router.push('/camera')}
+              hitSlop={8}
+            >
+              <Ionicons name="videocam" size={18} color={COLORS.danger} />
+            </Pressable>
+            <StatusPill status={alert.status} />
+          </View>
         </View>
         <Text style={styles.headerTime}>{formatWhen(alert.createdAt)}</Text>
         <Text style={styles.headerCoords}>
@@ -136,6 +145,16 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
   },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cameraButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
   headerTime: { marginTop: 4, color: COLORS.text, fontSize: 13 },
   headerCoords: { marginTop: 2, color: COLORS.muted, fontSize: 12 },

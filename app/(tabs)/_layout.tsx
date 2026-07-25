@@ -25,6 +25,16 @@ export default function TabsLayout() {
         options={{ title: 'Live Map', tabBarIcon: icon('map') }}
       />
       <Tabs.Screen
+        name="camera"
+        options={{
+          title: 'Camera',
+          tabBarIcon: icon('videocam'),
+          headerTitle: 'Cane Camera',
+          headerStyle: { backgroundColor: '#111' },
+          headerTintColor: '#fff',
+        }}
+      />
+      <Tabs.Screen
         name="routes"
         options={{ title: 'Routes', tabBarIcon: icon('navigate') }}
       />

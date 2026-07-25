@@ -103,3 +103,16 @@ Not required for v1. The app has a `GuardianApi` interface
 - `GET  /alerts/{id}` → same shape
 - `POST /alerts/{id}/ack` → `{ acknowledgedBy?: string }` → updated alert
 - Auth TBD (token per guardian account). Statuses: `active` → `acknowledged`.
+
+### Camera snapshots (see architecture_8.docx — snapshot-first, no live video)
+
+The cane uploads a snapshot with each fall alert and on request; the backend
+stores and serves them. The app's camera screen is simulated until these exist:
+
+- `GET  /devices/{id}/camera/latest` → image (or `{ url, takenAt }`) — newest
+  snapshot; the fall-alert upload lands here too
+- `POST /devices/{id}/camera/request` → asks the cane (via its MQTT command
+  topic) to capture + upload a fresh snapshot; app polls `latest` until
+  `takenAt` changes
+- Privacy rule the backend must enforce: every capture request also makes the
+  cane announce aloud "Guardian is viewing the camera"
