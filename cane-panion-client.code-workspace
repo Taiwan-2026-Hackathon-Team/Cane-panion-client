@@ -1,0 +1,22 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "cane-panion-client"
+    },
+    {
+      "path": "../cane-panion-firmware",
+      "name": "cane-panion-firmware"
+    }
+  ],
+  "settings": {
+    "search.exclude": {
+      "**/build": true,
+      "**/.venv": true,
+      "**/zephyr": true,
+      "**/modules": true,
+      "**/.west": true,
+      "**/.cache": true
+    }
+  }
+}

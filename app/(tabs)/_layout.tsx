@@ -1,0 +1,37 @@
+import React from 'react';
+import type { ColorValue } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
+
+import { COLORS } from '../../src/constants';
+
+type IconName = keyof typeof Ionicons.glyphMap;
+
+function icon(name: IconName) {
+  return ({ color, size }: { color: ColorValue; size: number }) => (
+    <Ionicons name={name} color={color} size={size} />
+  );
+}
+
+export default function TabsLayout() {
+  return (
+    <Tabs screenOptions={{ tabBarActiveTintColor: COLORS.danger }}>
+      <Tabs.Screen
+        name="index"
+        options={{ title: 'Alerts', tabBarIcon: icon('warning') }}
+      />
+      <Tabs.Screen
+        name="live-map"
+        options={{ title: 'Live Map', tabBarIcon: icon('map') }}
+      />
+      <Tabs.Screen
+        name="routes"
+        options={{ title: 'Routes', tabBarIcon: icon('navigate') }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{ title: 'Cane Settings', tabBarIcon: icon('settings') }}
+      />
+    </Tabs>
+  );
+}
