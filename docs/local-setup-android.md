@@ -24,6 +24,39 @@ which need `GoogleService-Info.plist`. (If you want it anyway:
 You need the Android SDK + an emulator or a USB device for `run:android`.
 Android Studio, or `sdkmanager` if you'd rather stay on the CLI.
 
+## Notifee Maven repo (required for Android builds)
+
+`@notifee/react-native` depends on `app.notifee:core`, which is **not** on
+Maven Central — it ships as a local Maven repo under
+`node_modules/@notifee/react-native/android/libs`. Without pointing Gradle at
+that path, `expo run:android` fails with:
+
+```text
+Could not find any matches for app.notifee:core:+
+```
+
+This is already wired in `app.json` via `expo-build-properties` →
+`android.extraMavenRepos` (the community Expo workaround; Notifee's
+[install docs](https://notifee.app/react-native/docs/installation) mention an
+Expo plugin, but v9.1.8 does not ship one). Path is relative to `android/`:
+
+```json
+"extraMavenRepos": [
+  "../../node_modules/@notifee/react-native/android/libs"
+]
+```
+
+Don't delete that entry. After a clean `expo prebuild -p android` it is
+re-applied into `android/build.gradle` automatically.
+
+Sources:
+
+- Expo `extraMavenRepos` API:
+  [BuildProperties (SDK 57)](https://docs.expo.dev/versions/v57.0.0/sdk/build-properties/#pluginconfigtypeandroid)
+- Notifee + Expo resolution of `app.notifee:core:+`:
+  [invertase/notifee#941](https://github.com/invertase/notifee/issues/941),
+  [invertase/notifee#1262](https://github.com/invertase/notifee/issues/1262)
+
 ## What works and what doesn't
 
 Works: the whole UI, in-app navigation, the map, the home picker, the cane

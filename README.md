@@ -167,3 +167,7 @@ the app → the alert is still in history, acknowledged.
 - FCM data values are strings; the app parses lat/lon.
 - Firebase console "test message" targets a *token*, not the topic — that's why
   the Settings screen shows the token.
+- **Notifee on Android** needs a local Maven repo
+  (`expo-build-properties` → `extraMavenRepos` in `app.json`). Details:
+  [`docs/local-setup-android.md`](docs/local-setup-android.md#notifee-maven-repo-required-for-android-builds).
+  Without it, Gradle fails resolving `app.notifee:core:+`.

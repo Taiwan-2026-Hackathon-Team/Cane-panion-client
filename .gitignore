@@ -40,6 +40,9 @@ yarn-error.*
 /ios
 /android
 
+# IDE
+.idea/
+
 # Firebase config (per-developer, download from Firebase console)
 google-services.json
 GoogleService-Info.plist
