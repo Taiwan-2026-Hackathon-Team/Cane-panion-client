@@ -4,6 +4,9 @@ React Native (Expo) companion app for the Cane-panion smart cane. Guardians
 receive a push notification when the cane detects a fall and see the location
 on a map, with alert history and acknowledge.
 
+- **Running it locally?** Start at [Quick start](#quick-start--no-firebase-account-needed)
+  — no Firebase account required. Linux/Android notes:
+  [`docs/local-setup-android.md`](docs/local-setup-android.md)
 - System design: `../cane-panion-firmware/architecture_7.docx`
 - Backend contract (for the Go team): [`docs/push-contract.md`](docs/push-contract.md)
 - The backend itself is **not** in this repo — it's built by the software team.
@@ -21,7 +24,52 @@ on a map, with alert history and acknowledge.
 - `src/notifications/` — channel setup, message handling, tap → `alert/[eventId]`
   navigation (including cold start).
 
-## One-time setup
+## Quick start — no Firebase account needed
+
+You do **not** need real Firebase credentials to run the app or to demo the
+fall-alert flow. `app.json` points at two config files that are gitignored
+(per-developer downloads), so a fresh clone has neither and `expo prebuild`
+fails. Copy the checked-in placeholders instead.
+
+**Prerequisites:** Node 20+, and then either
+- **Android** (any OS): Android Studio, or the command-line SDK tools + platform
+  tools. Needs an emulator (a plain image is fine — you only need a Google Play
+  image for real FCM, which this path doesn't use) or a USB device with USB
+  debugging on.
+- **iOS** (macOS only): Xcode + CocoaPods.
+
+```sh
+npm install --legacy-peer-deps
+cp google-services.example.json google-services.json          # Android
+cp GoogleService-Info.example.plist GoogleService-Info.plist  # iOS
+
+npx expo prebuild -p android   # Linux/Windows, or Android on a Mac
+npx expo run:android
+
+# or, on a Mac:
+npx expo prebuild -p ios
+npx expo run:ios
+```
+
+Pass `-p` explicitly. Bare `expo prebuild` runs the mods for **both** platforms
+and fails on whichever config you didn't copy.
+
+**What works:** everything except FCM delivery. Use **Alerts tab → "Simulate
+fall (dev)"** (dev builds only) — it injects an alert through the identical code
+path a real push takes (`alertFromPushData` → `upsertAlert` →
+`displaySosNotification`), so the notification, tap-to-navigate, map pin,
+acknowledge, and persisted history all behave for real. Notifee renders
+notifications locally and doesn't need Firebase.
+
+**What doesn't:** actual pushes from the network. The placeholder project is
+`cane-panion-placeholder`; Settings → Developer will show the FCM token as
+`unavailable`. That's expected, not a bug — every Firebase call is
+`.catch()`-wrapped so nothing crashes. The map also renders grey on Android
+until a real Maps key is set (see below); iOS uses Apple Maps and is unaffected.
+
+Do this full setup only when you need real end-to-end push:
+
+## One-time setup (real Firebase)
 
 This app uses native Firebase modules — **it cannot run in Expo Go**; you need
 a dev build (`expo prebuild` + `run:android` / `run:ios`).
@@ -52,7 +100,7 @@ a dev build (`expo prebuild` + `run:android` / `run:ios`).
 ### 3. Build and run
 
 ```sh
-npm install
+npm install --legacy-peer-deps
 npx expo prebuild            # generates android/ and ios/ (gitignored)
 npx expo run:android         # physical device, or emulator WITH Google Play image
 npx expo run:ios --device    # physical iPhone (push does not work in simulator)
