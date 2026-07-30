@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { getMessaging, getToken } from '@react-native-firebase/messaging';
 import { router, useFocusEffect } from 'expo-router';
 
-import type { LatLng } from '../../src/types/models';
-import { COLORS, SOS_TOPIC } from '../../src/constants';
-import { getHomeLocation } from '../../src/store/settings';
+import type { LatLng } from '../../../src/types/models';
+import { COLORS, SOS_TOPIC } from '../../../src/constants';
+import { getHomeLocation } from '../../../src/store/settings';
+import { useAuth } from '@/src/auth/AuthProvider';
+import { useLogoutMutation } from '@/src/auth/authMutations';
 
 const FUTURE_SETTINGS = [
   ['Haptic intensity', 'Buzz strength per motor'],
@@ -18,12 +20,15 @@ const FUTURE_SETTINGS = [
 export default function SettingsScreen() {
   const [token, setToken] = useState<string>();
   const [home, setHome] = useState<LatLng>();
+  const {
+    state: { user },
+  } = useAuth();
+  const logoutMutation = useLogoutMutation();
 
   useEffect(() => {
     getToken(getMessaging()).then(setToken).catch(() => setToken('unavailable'));
   }, []);
 
-  // Re-read on focus so returning from the picker shows the new value.
   useFocusEffect(
     useCallback(() => {
       getHomeLocation().then(setHome);
@@ -32,6 +37,25 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.sectionTitle}>Account</Text>
+      <Text style={styles.sectionNote}>
+        {user?.email
+          ? `Signed in as ${user.email}`
+          : user?.username
+            ? `Signed in as ${user.username}`
+            : 'Signed in'}
+        {user?.role ? ` · ${user.role}` : ''}
+      </Text>
+      <Pressable
+        style={[styles.logoutButton, logoutMutation.isPending && styles.logoutDisabled]}
+        disabled={logoutMutation.isPending}
+        onPress={() => logoutMutation.mutate()}
+      >
+        <Text style={styles.logoutButtonText}>
+          {logoutMutation.isPending ? 'Signing out…' : 'Sign out'}
+        </Text>
+      </Pressable>
+
       <Text style={styles.sectionTitle}>Saved places</Text>
       <Text style={styles.sectionNote}>
         Used for quick route pushes to the cane once the backend is connected.
@@ -87,6 +111,14 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40 },
   sectionTitle: { fontSize: 17, fontWeight: '700', color: COLORS.text, marginTop: 16 },
   sectionNote: { color: COLORS.muted, marginTop: 4, marginBottom: 8, lineHeight: 19 },
+  logoutButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: COLORS.danger,
+  },
+  logoutDisabled: { opacity: 0.6 },
+  logoutButtonText: { color: '#fff', fontWeight: '700' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -11,18 +11,18 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { getGuardianApi } from '../../src/api/client';
-import { formatWhen } from '../../src/components/AlertListItem';
-import { SosMap } from '../../src/components/SosMap';
-import { StatusPill } from '../../src/components/StatusPill';
-import { CANE_PHONE_NUMBER, COLORS } from '../../src/constants';
-import { useAlert } from '../../src/hooks/useAlerts';
+import { getGuardianApi } from '../../../src/api/client';
+import { formatWhen } from '../../../src/components/AlertListItem';
+import { SosMap } from '../../../src/components/SosMap';
+import { StatusPill } from '../../../src/components/StatusPill';
+import { CANE_PHONE_NUMBER, COLORS } from '../../../src/constants';
+import { useAlert } from '../../../src/hooks/useAlerts';
 import {
   distanceMeters,
   formatDistance,
   useGuardianLocation,
-} from '../../src/hooks/useGuardianLocation';
-import { useRoute } from '../../src/hooks/useRoute';
+} from '../../../src/hooks/useGuardianLocation';
+import { useRoute } from '../../../src/hooks/useRoute';
 
 // The OSRM demo server's duration is car-profile; estimate walking at ~5 km/h.
 function formatWalkEta(routeMeters: number): string {

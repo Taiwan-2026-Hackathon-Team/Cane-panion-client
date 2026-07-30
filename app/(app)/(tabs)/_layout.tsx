@@ -3,7 +3,7 @@ import type { ColorValue } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
-import { COLORS } from '../../src/constants';
+import { COLORS } from '../../../src/constants';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 

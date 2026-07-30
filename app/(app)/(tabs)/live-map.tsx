@@ -2,16 +2,16 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { COLORS } from '../../src/constants';
+import { COLORS } from '../../../src/constants';
 
-export default function RoutesScreen() {
+export default function LiveMapScreen() {
   return (
     <View style={styles.container}>
-      <Ionicons name="navigate-outline" size={44} color={COLORS.muted} />
-      <Text style={styles.title}>Route planner</Text>
+      <Ionicons name="map-outline" size={44} color={COLORS.muted} />
+      <Text style={styles.title}>Live location</Text>
       <Text style={styles.text}>
-        Plan a route and push it to the cane for turn-by-turn guidance. Coming
-        with the backend's routing support.
+        A live map of the cane's position will appear here once the backend
+        streams location updates.
       </Text>
     </View>
   );

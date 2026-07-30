@@ -14,6 +14,25 @@ export const CANE_PHONE_NUMBER = '+639170000000';
 /** AsyncStorage key holding the persisted alert list. */
 export const ALERTS_STORAGE_KEY = '@canepanion/alerts';
 
+/** SecureStore key for the guardian JWT. */
+export const AUTH_TOKEN_KEY = '@canepanion/auth-token';
+
+/**
+ * Gin API base URL from `EXPO_PUBLIC_API_URL` (see `.env.example`).
+ * Use your machine's LAN IP (not localhost) so a phone/emulator can reach it.
+ */
+function requireApiUrl(): string {
+  const raw = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (!raw) {
+    throw new Error(
+      'Missing EXPO_PUBLIC_API_URL. Copy .env.example to .env and set your LAN IP (e.g. http://192.168.x.x:8080).',
+    );
+  }
+  return raw.replace(/\/$/, '');
+}
+
+export const API_URL = requireApiUrl();
+
 export const COLORS = {
   danger: '#d92b2b',
   dangerDark: '#a51f1f',

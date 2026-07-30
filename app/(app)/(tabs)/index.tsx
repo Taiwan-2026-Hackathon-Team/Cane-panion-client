@@ -2,11 +2,11 @@ import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
-import { AlertListItem } from '../../src/components/AlertListItem';
-import { COLORS } from '../../src/constants';
-import { useAlerts } from '../../src/hooks/useAlerts';
-import { alertFromPushData, upsertAlert } from '../../src/store/alerts';
-import { displaySosNotification } from '../../src/notifications/handlers';
+import { AlertListItem } from '../../../src/components/AlertListItem';
+import { COLORS } from '../../../src/constants';
+import { useAlerts } from '../../../src/hooks/useAlerts';
+import { alertFromPushData, upsertAlert } from '../../../src/store/alerts';
+import { displaySosNotification } from '../../../src/notifications/handlers';
 
 /** Dev-only: inject a fake fall through the exact same path a push takes. */
 async function simulateFall() {
