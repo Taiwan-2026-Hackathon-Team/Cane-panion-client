@@ -38,14 +38,7 @@ export default function SettingsScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.sectionTitle}>Account</Text>
-      <Text style={styles.sectionNote}>
-        {user?.email
-          ? `Signed in as ${user.email}`
-          : user?.username
-            ? `Signed in as ${user.username}`
-            : 'Signed in'}
-        {user?.role ? ` · ${user.role}` : ''}
-      </Text>
+      <Text style={styles.sectionNote}>{user?.username ?? 'Signed in'}</Text>
       <Pressable
         style={[styles.logoutButton, logoutMutation.isPending && styles.logoutDisabled]}
         disabled={logoutMutation.isPending}
