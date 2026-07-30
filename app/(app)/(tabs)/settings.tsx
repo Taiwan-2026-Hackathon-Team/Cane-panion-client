@@ -51,7 +51,7 @@ export default function SettingsScreen() {
 
       <Text style={styles.sectionTitle}>Saved places</Text>
       <Text style={styles.sectionNote}>
-        Used for quick route pushes to the cane once the backend is connected.
+        Places you can send to the cane for quick navigation.
       </Text>
       <Pressable style={styles.row} onPress={() => router.push('/set-home')}>
         <Ionicons name="home" size={20} color={COLORS.danger} style={styles.rowIcon} />
@@ -67,8 +67,7 @@ export default function SettingsScreen() {
       </Pressable>
       <Text style={styles.sectionTitle}>Cane settings</Text>
       <Text style={styles.sectionNote}>
-        Remote configuration of the cane arrives with the backend. Settings are
-        pushed to the cane over MQTT and confirmed aloud to the user.
+        Adjust how the cane feels and sounds. Coming soon.
       </Text>
       {FUTURE_SETTINGS.map(([name, desc]) => (
         <View key={name} style={styles.row}>
