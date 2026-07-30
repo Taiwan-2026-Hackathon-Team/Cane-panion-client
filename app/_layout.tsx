@@ -13,6 +13,21 @@ import {
   useNotificationNavigation,
 } from '../src/notifications/handlers';
 
+function AuthLoading() {
+  return (
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: COLORS.background,
+      }}
+    >
+      <ActivityIndicator color={COLORS.danger} size="large" />
+    </View>
+  );
+}
+
 function RootNavigator() {
   const {
     state: { status },
@@ -22,19 +37,9 @@ function RootNavigator() {
   useEffect(() => initForegroundMessaging(), []);
   useNotificationNavigation();
 
+  // Token hydrate suspends in AuthProvider; this covers GET /me after a token exists.
   if (status === 'loading') {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: COLORS.background,
-        }}
-      >
-        <ActivityIndicator color={COLORS.danger} size="large" />
-      </View>
-    );
+    return <AuthLoading />;
   }
 
   return (
@@ -55,7 +60,7 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
+    <AuthProvider fallback={<AuthLoading />}>
       <RootNavigator />
     </AuthProvider>
   );

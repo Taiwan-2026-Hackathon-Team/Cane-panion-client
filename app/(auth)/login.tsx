@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
-import { router } from 'expo-router';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,14 +22,7 @@ export default function LoginScreen() {
     if (!trimmedEmail || !password) {
       return;
     }
-    loginMutation.mutate(
-      { email: trimmedEmail, password },
-      {
-        onSuccess: () => {
-          router.replace('/(app)/(tabs)/live-map');
-        },
-      },
-    );
+    loginMutation.mutate({ email: trimmedEmail, password });
   }
 
   return (

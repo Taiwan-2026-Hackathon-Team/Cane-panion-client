@@ -1,8 +1,8 @@
 import { type } from 'arktype';
 import ky, { isHTTPError, SchemaValidationError } from 'ky';
 
-import { API_URL } from '../constants';
 import { getAuthToken } from '../auth/tokenStorage';
+import { API_URL } from '../constants';
 
 /** Backend error payloads: `{ success?: false, message: string }`. */
 const ApiErrorBody = type({
@@ -11,7 +11,7 @@ const ApiErrorBody = type({
 
 /**
  * Shared HTTP client. Pass `context: { auth: false }` to skip the Bearer header
- * (e.g. login). Otherwise the SecureStore JWT is attached when present.
+ * (e.g. login). Otherwise the in-memory JWT is attached when present.
  *
  * `beforeError` copies API `message` onto `error.message` when present.
  */
@@ -19,9 +19,9 @@ export const api = ky.create({
   prefix: API_URL,
   hooks: {
     beforeRequest: [
-      async ({ request, options }) => {
+      ({ request, options }) => {
         if (options.context.auth === false) return;
-        const token = await getAuthToken();
+        const token = getAuthToken();
         if (token) {
           request.headers.set('Authorization', `Bearer ${token}`);
         }

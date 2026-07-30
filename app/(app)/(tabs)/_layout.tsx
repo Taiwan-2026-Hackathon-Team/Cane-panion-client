@@ -16,13 +16,14 @@ function icon(name: IconName) {
 export default function TabsLayout() {
   return (
     <Tabs screenOptions={{ tabBarActiveTintColor: COLORS.danger }}>
+      {/* `index` is Live Map so Stack.Protected lands here after login. */}
       <Tabs.Screen
         name="index"
-        options={{ title: 'Alerts', tabBarIcon: icon('warning') }}
+        options={{ title: 'Live Map', tabBarIcon: icon('map') }}
       />
       <Tabs.Screen
-        name="live-map"
-        options={{ title: 'Live Map', tabBarIcon: icon('map') }}
+        name="alerts"
+        options={{ title: 'Alerts', tabBarIcon: icon('warning') }}
       />
       <Tabs.Screen
         name="camera"
