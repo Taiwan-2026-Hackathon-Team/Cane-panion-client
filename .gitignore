@@ -44,6 +44,9 @@ yarn-error.*
 # IDE
 .idea/
 
+# Local agent/planning notes (not for the repo)
+docs/superpowers/
+
 # Firebase config (per-developer, download from Firebase console)
 google-services.json
 GoogleService-Info.plist
