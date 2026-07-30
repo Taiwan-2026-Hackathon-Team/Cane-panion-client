@@ -33,6 +33,22 @@ export function useGuardianLocation(
         onDeniedRef.current?.();
         return;
       }
+      // Initial fix so a stationary device/emulator isn't stuck waiting for
+      // distanceInterval movement before the first watch callback.
+      try {
+        const current = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (!cancelled) {
+          setLocation({
+            latitude: current.coords.latitude,
+            longitude: current.coords.longitude,
+          });
+        }
+      } catch {
+        // Watch below may still deliver a fix; leave location undefined for now.
+      }
+      if (cancelled) return;
       sub.current = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.Balanced, distanceInterval: 5 },
         (pos) => {
