@@ -35,11 +35,12 @@ export function subscribeAuthToken(onStoreChange: () => void): () => void {
   };
 }
 
-/** Cold-start: load SecureStore into memory once. Safe to call from use(). */
+/**
+ * Cold-start: load SecureStore into memory once. Safe to call from use().
+ * Always returns the same promise instance — a fresh Promise.resolve() each
+ * render makes React treat it as uncached and LogBox-errors.
+ */
 export function hydrateAuthToken(): Promise<string | null> {
-  if (memoryToken !== undefined) {
-    return Promise.resolve(memoryToken);
-  }
   if (!hydratePromise) {
     hydratePromise = SecureStore.getItemAsync(AUTH_TOKEN_KEY)
       .catch(() => null)
