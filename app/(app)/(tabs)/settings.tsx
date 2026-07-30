@@ -89,7 +89,7 @@ export default function SettingsScreen() {
           {token ?? 'Loading token…'}
         </Text>
       </View>
-      {token && (
+      {token && token !== 'unavailable' && (
         <Pressable style={styles.shareButton} onPress={() => Share.share({ message: token })}>
           <Text style={styles.shareButtonText}>Share token</Text>
         </Pressable>
