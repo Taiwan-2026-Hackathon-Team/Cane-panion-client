@@ -41,7 +41,7 @@ export default function LoginScreen() {
       <View className="flex-1 justify-center gap-6 px-6">
         <View className="gap-2">
           <Text variant="h3" className="text-left">
-            Cane-panion
+            Canepanion
           </Text>
           <Text variant="muted">Sign in to view fall alerts and live map.</Text>
         </View>
