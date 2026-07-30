@@ -15,7 +15,7 @@ export const CANE_PHONE_NUMBER = '+639170000000';
 export const ALERTS_STORAGE_KEY = '@canepanion/alerts';
 
 /** SecureStore key for the guardian JWT. */
-export const AUTH_TOKEN_KEY = '@canepanion/auth-token';
+export const AUTH_TOKEN_KEY = 'canepanion.auth_token';
 
 /**
  * Gin API base URL from `EXPO_PUBLIC_API_URL` (see `.env.example`).
