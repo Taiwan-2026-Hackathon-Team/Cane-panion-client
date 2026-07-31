@@ -32,7 +32,7 @@ function callCane() {
 
 export default function AlertScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
-  const alert = useAlert(eventId);
+  const { alert, ready } = useAlert(eventId);
   const [navigating, setNavigating] = useState(false);
   const fallLocation = alert
     ? { latitude: alert.lat, longitude: alert.lon }
@@ -68,13 +68,32 @@ export default function AlertScreen() {
     return () => sub.remove();
   }, []);
 
-  if (!alert) {
+  if (!ready) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator size="large" color={COLORS.danger} />
         <Text variant="muted" className="mt-2.5">
           Loading alert…
         </Text>
+      </View>
+    );
+  }
+
+  if (!alert) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background px-10">
+        <Text className="text-base font-semibold text-foreground">Alert not found</Text>
+        <Text variant="muted" className="mt-2 text-center leading-5">
+          This alert was removed from history or is no longer available.
+        </Text>
+        <Button
+          variant="outline"
+          className="mt-6"
+          onPress={leaveAlertDetail}
+          accessibilityLabel="Back to alerts"
+        >
+          <Text className="font-semibold">Back to alerts</Text>
+        </Button>
       </View>
     );
   }

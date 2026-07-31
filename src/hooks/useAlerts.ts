@@ -20,17 +20,36 @@ export function useAlerts(): { alerts: FallAlert[]; reload: () => void } {
   return { alerts, reload };
 }
 
-export function useAlert(id: string | undefined): FallAlert | undefined {
+/** Live single alert. `ready` is false until the first load finishes. */
+export function useAlert(id: string | undefined): {
+  alert: FallAlert | undefined;
+  ready: boolean;
+} {
   const [alert, setAlert] = useState<FallAlert>();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setAlert(undefined);
+      setReady(true);
+      return;
+    }
+    setReady(false);
     const load = () => {
-      getGuardianApi().getAlert(id).then(setAlert).catch(() => {});
+      getGuardianApi()
+        .getAlert(id)
+        .then((next) => {
+          setAlert(next);
+          setReady(true);
+        })
+        .catch(() => {
+          setAlert(undefined);
+          setReady(true);
+        });
     };
     load();
     return subscribeToAlerts(load);
   }, [id]);
 
-  return alert;
+  return { alert, ready };
 }

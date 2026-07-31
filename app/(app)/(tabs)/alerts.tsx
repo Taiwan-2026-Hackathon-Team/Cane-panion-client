@@ -1,13 +1,22 @@
 import React from 'react';
-import { SectionList, type SectionListData, View } from 'react-native';
+import {
+  Alert as RNAlert,
+  Pressable,
+  SectionList,
+  type SectionListData,
+  View,
+} from 'react-native';
 
 import { Text } from '@/components/ui/text';
 import { AlertListItem } from '@/components/AlertListItem';
 import { useAlerts } from '@/hooks/useAlerts';
-import { partitionAlerts } from '@/store/alerts';
+import { clearHistory, partitionAlerts } from '@/store/alerts';
 import type { FallAlert } from '@/types/models';
 
+type AlertSectionKey = 'active' | 'history';
+
 type AlertSection = {
+  key: AlertSectionKey;
   title: string;
   data: FallAlert[];
 };
@@ -30,16 +39,44 @@ function renderItem({ item }: { item: FallAlert }) {
   );
 }
 
+function confirmClearHistory() {
+  RNAlert.alert(
+    'Clear history?',
+    'Remove all seen fall alerts from this device. Active alerts stay.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: () => {
+          clearHistory().catch(() => {});
+        },
+      },
+    ],
+  );
+}
+
 function renderSectionHeader({
   section,
 }: {
   section: SectionListData<FallAlert, AlertSection>;
 }) {
   return (
-    <View className="border-b border-border bg-background px-1 pb-2 pt-5">
+    <View className="flex-row items-center justify-between border-b border-border bg-background px-1 pb-2 pt-5">
       <Text variant="muted" className="text-xs font-medium uppercase tracking-wide">
         {section.title}
       </Text>
+      {section.key === 'history' ? (
+        <Pressable
+          onPress={confirmClearHistory}
+          accessibilityRole="button"
+          accessibilityLabel="Clear history"
+          hitSlop={8}
+          className="min-h-11 min-w-11 items-end justify-center px-1 active:opacity-50"
+        >
+          <Text className="text-xs font-semibold tracking-wide text-destructive">Clear</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -48,8 +85,10 @@ export default function AlertsScreen() {
   const { alerts } = useAlerts();
   const { active, history } = partitionAlerts(alerts);
   const sections: AlertSection[] = [
-    ...(active.length > 0 ? [{ title: 'Active', data: active }] : []),
-    ...(history.length > 0 ? [{ title: 'History', data: history }] : []),
+    ...(active.length > 0 ? [{ key: 'active' as const, title: 'Active', data: active }] : []),
+    ...(history.length > 0
+      ? [{ key: 'history' as const, title: 'History', data: history }]
+      : []),
   ];
 
   if (sections.length === 0) {

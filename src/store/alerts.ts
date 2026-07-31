@@ -129,3 +129,12 @@ export function partitionAlerts(alerts: FallAlert[]): {
   }
   return { active, history };
 }
+
+/** Drop seen alerts; keep Active. No-op when history is already empty. */
+export function clearHistory(): Promise<void> {
+  return serialized(async () => {
+    const { active, history } = partitionAlerts(await listAlerts());
+    if (history.length === 0) return;
+    await saveAlerts(active);
+  });
+}
