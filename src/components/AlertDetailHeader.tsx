@@ -99,9 +99,7 @@ export function AlertDetailHeader({
           size="sm"
           className="min-h-11 gap-1 px-2"
           onPress={copyCoords}
-          accessibilityLabel={
-            copied ? 'Copied latitude and longitude' : 'Copy latitude and longitude'
-          }
+          accessibilityLabel={copied ? 'Copied coordinates' : 'Copy coordinates'}
         >
           <Ionicons
             name={copied ? 'checkmark' : 'copy-outline'}
@@ -109,7 +107,7 @@ export function AlertDetailHeader({
             color={COLORS.muted}
           />
           <Text variant="muted" className="text-xs">
-            {copied ? 'Copied' : 'Copy lat/lon'}
+            {copied ? 'Copied' : 'Copy coordinates'}
           </Text>
         </Button>
       </View>
