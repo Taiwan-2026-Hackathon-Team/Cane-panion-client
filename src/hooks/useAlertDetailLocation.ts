@@ -4,6 +4,54 @@ import * as Location from 'expo-location';
 import type { LatLng } from '@/types/models';
 import { formatPlace } from '@/utils/formatPlace';
 
+/** Don't let a hung GPS fix block Navigate / place lookup forever. */
+const FIX_TIMEOUT_MS = 8000;
+
+async function ensureForegroundPermission(): Promise<boolean> {
+  const current = await Location.getForegroundPermissionsAsync();
+  if (current.status === 'granted') return true;
+  const requested = await Location.requestForegroundPermissionsAsync();
+  return requested.status === 'granted';
+}
+
+function coordsFrom(pos: Location.LocationObject): LatLng {
+  return {
+    latitude: pos.coords.latitude,
+    longitude: pos.coords.longitude,
+  };
+}
+
+async function getCurrentPositionOrTimeout(): Promise<Location.LocationObject | null> {
+  try {
+    return await Promise.race([
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), FIX_TIMEOUT_MS);
+      }),
+    ]);
+  } catch {
+    return null;
+  }
+}
+
+/** Last-known (fast) then timed current fix. Never throws. */
+async function seedGuardianLocation(
+  setLocation: (loc: LatLng) => void,
+  isCancelled: () => boolean,
+): Promise<void> {
+  try {
+    const last = await Location.getLastKnownPositionAsync();
+    if (isCancelled()) return;
+    if (last) setLocation(coordsFrom(last));
+  } catch {
+    // Fall through to a live fix.
+  }
+
+  const current = await getCurrentPositionOrTimeout();
+  if (isCancelled() || !current) return;
+  setLocation(coordsFrom(current));
+}
+
 /**
  * Location + place for the alert detail screen:
  * - Quiet open (`placeAt`): ask permission, one position fix, reverse-geocode the fall.
@@ -37,33 +85,20 @@ export function useAlertDetailLocation({
     let cancelled = false;
     setPlace(undefined);
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (cancelled) return;
-      if (status !== 'granted') return;
+      const granted = await ensureForegroundPermission();
+      if (cancelled || !granted) return;
 
-      // Publish distance as soon as GPS returns; don't wait on place lookup.
-      const fixPromise = Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      }).then((current) => {
-        if (!cancelled) {
-          setGuardianLocation({
-            latitude: current.coords.latitude,
-            longitude: current.coords.longitude,
-          });
-        }
-      });
+      // GPS and place lookup are independent; don't wait on a hung fix for either.
+      void seedGuardianLocation(setGuardianLocation, () => cancelled);
 
-      const placePromise = Location.reverseGeocodeAsync(target)
-        .then((results) => {
-          if (cancelled) return;
-          const first = results[0];
-          setPlace(first ? formatPlace(first) : undefined);
-        })
-        .catch(() => {
-          if (!cancelled) setPlace(undefined);
-        });
-
-      await Promise.allSettled([fixPromise, placePromise]);
+      try {
+        const results = await Location.reverseGeocodeAsync(target);
+        if (cancelled) return;
+        const first = results[0];
+        setPlace(first ? formatPlace(first) : undefined);
+      } catch {
+        if (!cancelled) setPlace(undefined);
+      }
     })();
 
     return () => {
@@ -71,7 +106,7 @@ export function useAlertDetailLocation({
     };
   }, [placeAt?.latitude, placeAt?.longitude]);
 
-  // Job 2: Navigate — live watch; denial surfaces via onDenied.
+  // Job 2: Navigate — start the watch immediately; seed a fix in parallel.
   useEffect(() => {
     if (!watch) {
       sub.current?.remove();
@@ -81,35 +116,26 @@ export function useAlertDetailLocation({
 
     let cancelled = false;
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      const granted = await ensureForegroundPermission();
       if (cancelled) return;
-      if (status !== 'granted') {
+      if (!granted) {
         onDeniedRef.current?.();
         return;
       }
 
-      try {
-        const current = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        if (!cancelled) {
-          setGuardianLocation({
-            latitude: current.coords.latitude,
-            longitude: current.coords.longitude,
-          });
-        }
-      } catch {
-        // Watch below may still deliver a fix.
-      }
-      if (cancelled) return;
+      // Never await a one-shot fix before watching — getCurrentPosition can hang
+      // (common on Android emulators without a mock location).
+      void seedGuardianLocation(setGuardianLocation, () => cancelled);
 
       sub.current = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, distanceInterval: 5 },
+        {
+          accuracy: Location.Accuracy.Balanced,
+          distanceInterval: 5,
+          // Android: also tick while stationary so we aren't stuck until movement.
+          timeInterval: 2000,
+        },
         (pos) => {
-          setGuardianLocation({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-          });
+          setGuardianLocation(coordsFrom(pos));
         },
       );
       if (cancelled) {
