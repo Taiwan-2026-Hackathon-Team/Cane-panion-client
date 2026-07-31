@@ -28,7 +28,7 @@ function routeStatusLabel({
   hasLocation: boolean;
 }): string {
   if (route) {
-    return `${formatDistance(route.distanceMeters)} · ${formatWalkEta(route.distanceMeters)} walk`;
+    return `${formatDistance(route.distanceMeters)} walk · ${formatWalkEta(route.distanceMeters)}`;
   }
   if (!hasLocation) return 'Getting your location…';
   if (routeFailed) return 'Route unavailable';
@@ -89,11 +89,13 @@ export function AlertDetailHeader({
         </Text>
       ) : null}
       <View className="mt-0.5 flex-row items-center gap-2">
-        <Text variant="muted" className="shrink text-xs">
-          {straightLineMeters !== undefined
-            ? `${formatDistance(straightLineMeters)} away`
-            : 'Waiting for GPS…'}
-        </Text>
+        {route ? null : (
+          <Text variant="muted" className="shrink text-xs">
+            {straightLineMeters !== undefined
+              ? `${formatDistance(straightLineMeters)} straight line`
+              : 'Waiting for GPS…'}
+          </Text>
+        )}
         <Button
           variant="ghost"
           size="sm"
