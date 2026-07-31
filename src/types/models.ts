@@ -3,7 +3,7 @@ export interface LatLng {
   longitude: number;
 }
 
-export type AlertStatus = 'active' | 'acknowledged';
+export type AlertStatus = 'active' | 'seen';
 
 /**
  * A fall SOS event as the guardian app knows it. In v1 every field is
@@ -22,7 +22,8 @@ export interface FallAlert {
   /** When this phone received the push (ISO 8601). */
   receivedAt: string;
   status: AlertStatus;
-  acknowledgedAt?: string;
+  /** When the guardian opened/viewed the alert (ISO 8601). */
+  seenAt?: string;
 }
 
 /** The FCM data payload contract — every value arrives as a string. */

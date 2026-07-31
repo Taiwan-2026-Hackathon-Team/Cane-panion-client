@@ -14,7 +14,7 @@ const MAX_ALERTS = 200;
 
 /**
  * All mutations are chained through this promise so concurrent writers (two
- * near-simultaneous pushes, or a push racing an acknowledge) never interleave
+ * near-simultaneous pushes, or a push racing a mark-seen) never interleave
  * their read-modify-write and drop an alert.
  */
 let writeQueue: Promise<unknown> = Promise.resolve();
@@ -100,13 +100,13 @@ export function upsertAlert(alert: FallAlert): Promise<FallAlert> {
   });
 }
 
-export function acknowledgeAlert(id: string): Promise<FallAlert | undefined> {
+export function markAlertSeen(id: string): Promise<FallAlert | undefined> {
   return serialized(async () => {
     const alerts = await listAlerts();
     const target = alerts.find((a) => a.id === id);
-    if (!target || target.status === 'acknowledged') return target;
-    target.status = 'acknowledged';
-    target.acknowledgedAt = new Date().toISOString();
+    if (!target || target.status === 'seen') return target;
+    target.status = 'seen';
+    target.seenAt = new Date().toISOString();
     await saveAlerts(alerts);
     return target;
   });
@@ -116,7 +116,7 @@ export async function activeAlerts(): Promise<FallAlert[]> {
   return (await listAlerts()).filter((a) => a.status === 'active');
 }
 
-/** Split a list into Active vs History (acknowledged) for sectioned UI. */
+/** Split a list into Active vs History (seen) for sectioned UI. */
 export function partitionAlerts(alerts: FallAlert[]): {
   active: FallAlert[];
   history: FallAlert[];

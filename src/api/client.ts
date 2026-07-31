@@ -10,7 +10,7 @@ import type { FallAlert } from '../types/models';
 export interface GuardianApi {
   getAlerts(): Promise<FallAlert[]>;
   getAlert(id: string): Promise<FallAlert | undefined>;
-  acknowledgeAlert(id: string): Promise<FallAlert | undefined>;
+  markAlertSeen(id: string): Promise<FallAlert | undefined>;
 }
 
 import { localStoreApi } from './localStoreApi';

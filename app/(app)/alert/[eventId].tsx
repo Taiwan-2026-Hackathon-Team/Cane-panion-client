@@ -57,7 +57,7 @@ export default function AlertScreen() {
 
   // Viewing the alert marks it seen.
   useEffect(() => {
-    if (eventId) getGuardianApi().acknowledgeAlert(eventId).catch(() => {});
+    if (eventId) getGuardianApi().markAlertSeen(eventId).catch(() => {});
   }, [eventId]);
 
   if (!alert) {
