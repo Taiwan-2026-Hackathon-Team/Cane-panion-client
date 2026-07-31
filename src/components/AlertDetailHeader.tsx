@@ -42,7 +42,6 @@ export function AlertDetailHeader({
   route,
   routeFailed,
   hasGuardianLocation,
-  topInset,
 }: {
   alert: FallAlert;
   place?: string;
@@ -51,7 +50,6 @@ export function AlertDetailHeader({
   route?: Route;
   routeFailed: boolean;
   hasGuardianLocation: boolean;
-  topInset: number;
 }) {
   const navigateLabel = navigating
     ? routeStatusLabel({
@@ -61,11 +59,10 @@ export function AlertDetailHeader({
       })
     : undefined;
 
+  // Screen already sits under the stack header — don't add status-bar inset again
+  // or this card can sit on top of the back control.
   return (
-    <View
-      className="absolute left-3 right-3 rounded-[10px] border border-border bg-background/95 p-3"
-      style={{ top: topInset + 12 }}
-    >
+    <View className="absolute left-3 right-3 top-3 rounded-[10px] border border-border bg-background/95 p-3">
       <View className="flex-row items-center justify-between">
         <Text className="text-base font-bold text-foreground">Fall — {alert.deviceId}</Text>
         <Button
@@ -83,11 +80,11 @@ export function AlertDetailHeader({
           {place}
         </Text>
       ) : null}
-      {straightLineMeters !== undefined ? (
-        <Text variant="muted" className="mt-0.5 text-xs">
-          {formatDistance(straightLineMeters)} away
-        </Text>
-      ) : null}
+      <Text variant="muted" className="mt-0.5 text-xs">
+        {straightLineMeters !== undefined
+          ? `${formatDistance(straightLineMeters)} away`
+          : 'Waiting for GPS…'}
+      </Text>
       {navigateLabel ? (
         <Text className="mt-1.5 text-sm font-bold text-destructive">{navigateLabel}</Text>
       ) : null}

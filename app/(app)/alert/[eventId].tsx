@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert as RNAlert,
+  BackHandler,
   Linking,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
@@ -19,6 +19,7 @@ import { useAlert } from '@/hooks/useAlerts';
 import { useAlertDetailLocation } from '@/hooks/useAlertDetailLocation';
 import { useRoute } from '@/hooks/useRoute';
 import { distanceMeters } from '@/utils/geo';
+import { leaveAlertDetail } from '@/utils/leaveAlertDetail';
 
 function callCane() {
   Linking.openURL(`tel:${CANE_PHONE_NUMBER}`).catch(() => {
@@ -31,7 +32,6 @@ function callCane() {
 
 export default function AlertScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
-  const insets = useSafeAreaInsets();
   const alert = useAlert(eventId);
   const [navigating, setNavigating] = useState(false);
   const fallLocation = alert
@@ -59,6 +59,15 @@ export default function AlertScreen() {
     if (eventId) getGuardianApi().markAlertSeen(eventId).catch(() => {});
   }, [eventId]);
 
+  // Android MapView often swallows the system back button.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      leaveAlertDetail();
+      return true;
+    });
+    return () => sub.remove();
+  }, []);
+
   if (!alert) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
@@ -76,7 +85,7 @@ export default function AlertScreen() {
       : undefined;
 
   return (
-    <View className="flex-1">
+    <View className="flex-1 overflow-hidden">
       <SosMap
         alert={alert}
         userLocation={navigating ? guardianLocation : undefined}
@@ -92,13 +101,9 @@ export default function AlertScreen() {
         route={route}
         routeFailed={routeFailed}
         hasGuardianLocation={guardianLocation !== undefined}
-        topInset={insets.top}
       />
 
-      <View
-        className="absolute left-3 right-3 flex-row gap-2.5"
-        style={{ bottom: insets.bottom + 24 }}
-      >
+      <View className="absolute bottom-6 left-3 right-3 flex-row gap-2.5">
         <Button
           className="h-auto flex-1 rounded-[10px] py-3.5"
           style={{ backgroundColor: COLORS.ok }}

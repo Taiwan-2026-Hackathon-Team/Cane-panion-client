@@ -4,8 +4,8 @@ import * as Location from 'expo-location';
 import type { LatLng } from '@/types/models';
 import { formatPlace } from '@/utils/formatPlace';
 
-/** Don't let a hung GPS fix block Navigate / place lookup forever. */
-const FIX_TIMEOUT_MS = 8000;
+const FIX_TIMEOUT_MS = 6000;
+const WATCH_SUBSCRIBE_TIMEOUT_MS = 5000;
 
 async function ensureForegroundPermission(): Promise<boolean> {
   const current = await Location.getForegroundPermissionsAsync();
@@ -24,7 +24,10 @@ function coordsFrom(pos: Location.LocationObject): LatLng {
 async function getCurrentPositionOrTimeout(): Promise<Location.LocationObject | null> {
   try {
     return await Promise.race([
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+      Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+        mayShowUserSettingsDialog: true,
+      }),
       new Promise<null>((resolve) => {
         setTimeout(() => resolve(null), FIX_TIMEOUT_MS);
       }),
@@ -34,30 +37,12 @@ async function getCurrentPositionOrTimeout(): Promise<Location.LocationObject | 
   }
 }
 
-/** Last-known (fast) then timed current fix. Never throws. */
-async function seedGuardianLocation(
-  setLocation: (loc: LatLng) => void,
-  isCancelled: () => boolean,
-): Promise<void> {
-  try {
-    const last = await Location.getLastKnownPositionAsync();
-    if (isCancelled()) return;
-    if (last) setLocation(coordsFrom(last));
-  } catch {
-    // Fall through to a live fix.
-  }
-
-  const current = await getCurrentPositionOrTimeout();
-  if (isCancelled() || !current) return;
-  setLocation(coordsFrom(current));
-}
-
 /**
- * Location + place for the alert detail screen:
- * - Quiet open (`placeAt`): ask permission, one position fix, reverse-geocode the fall.
- *   Denial is silent (header just omits place/distance).
- * - Navigate (`watch`): live GPS updates. Denial calls `onDenied` (in-app dialog).
- *   Stopping watch removes the subscription but keeps the last fix for header distance.
+ * Location + place for the alert detail screen.
+ *
+ * Guardian GPS: last-known (immediate paint) + timed current fix + live watch.
+ * Emulators often hang on subscribe/fix — those paths time out so the UI
+ * still progresses; a working mock location updates distance when callbacks land.
  */
 export function useAlertDetailLocation({
   placeAt,
@@ -70,11 +55,10 @@ export function useAlertDetailLocation({
 }): { guardianLocation?: LatLng; place?: string } {
   const [guardianLocation, setGuardianLocation] = useState<LatLng>();
   const [place, setPlace] = useState<string>();
-  const sub = useRef<Location.LocationSubscription>(null);
   const onDeniedRef = useRef(onDenied);
   onDeniedRef.current = onDenied;
+  const subRef = useRef<Location.LocationSubscription | null>(null);
 
-  // Job 1: quiet open — permission + one-shot fix + place lookup.
   useEffect(() => {
     if (!placeAt) {
       setPlace(undefined);
@@ -84,13 +68,10 @@ export function useAlertDetailLocation({
     const target = placeAt;
     let cancelled = false;
     setPlace(undefined);
+
     (async () => {
       const granted = await ensureForegroundPermission();
       if (cancelled || !granted) return;
-
-      // GPS and place lookup are independent; don't wait on a hung fix for either.
-      void seedGuardianLocation(setGuardianLocation, () => cancelled);
-
       try {
         const results = await Location.reverseGeocodeAsync(target);
         if (cancelled) return;
@@ -106,50 +87,64 @@ export function useAlertDetailLocation({
     };
   }, [placeAt?.latitude, placeAt?.longitude]);
 
-  // Job 2: Navigate — start the watch immediately; seed a fix in parallel.
   useEffect(() => {
-    if (!watch) {
-      sub.current?.remove();
-      sub.current = null;
-      return;
-    }
+    if (!placeAt) return;
 
     let cancelled = false;
+
     (async () => {
       const granted = await ensureForegroundPermission();
       if (cancelled) return;
       if (!granted) {
-        onDeniedRef.current?.();
+        if (watch) onDeniedRef.current?.();
         return;
       }
 
-      // Never await a one-shot fix before watching — getCurrentPosition can hang
-      // (common on Android emulators without a mock location).
-      void seedGuardianLocation(setGuardianLocation, () => cancelled);
+      // Immediate paint — may be stale until a live fix arrives.
+      try {
+        const last = await Location.getLastKnownPositionAsync();
+        if (!cancelled && last) setGuardianLocation(coordsFrom(last));
+      } catch {
+        // Continue.
+      }
 
-      sub.current = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          distanceInterval: 5,
-          // Android: also tick while stationary so we aren't stuck until movement.
-          timeInterval: 2000,
-        },
-        (pos) => {
-          setGuardianLocation(coordsFrom(pos));
-        },
-      );
-      if (cancelled) {
-        sub.current?.remove();
-        sub.current = null;
+      void getCurrentPositionOrTimeout().then((current) => {
+        if (!cancelled && current) setGuardianLocation(coordsFrom(current));
+      });
+
+      try {
+        const sub = await Promise.race([
+          Location.watchPositionAsync(
+            {
+              accuracy: Location.Accuracy.Balanced,
+              distanceInterval: watch ? 5 : 1,
+              timeInterval: watch ? 2000 : 1000,
+              mayShowUserSettingsDialog: true,
+            },
+            (pos) => {
+              setGuardianLocation(coordsFrom(pos));
+            },
+          ),
+          new Promise<null>((resolve) => {
+            setTimeout(() => resolve(null), WATCH_SUBSCRIBE_TIMEOUT_MS);
+          }),
+        ]);
+        if (cancelled) {
+          sub?.remove();
+          return;
+        }
+        if (sub) subRef.current = sub;
+      } catch {
+        // Live watch unavailable; last-known / one-shot may still have painted.
       }
     })();
 
     return () => {
       cancelled = true;
-      sub.current?.remove();
-      sub.current = null;
+      subRef.current?.remove();
+      subRef.current = null;
     };
-  }, [watch]);
+  }, [placeAt?.latitude, placeAt?.longitude, watch]);
 
   return { guardianLocation, place };
 }
