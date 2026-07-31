@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 
 import type { Route } from '@/api/routing';
@@ -51,6 +52,7 @@ export function AlertDetailHeader({
   routeFailed: boolean;
   hasGuardianLocation: boolean;
 }) {
+  const [copied, setCopied] = useState(false);
   const navigateLabel = navigating
     ? routeStatusLabel({
         route,
@@ -58,6 +60,12 @@ export function AlertDetailHeader({
         hasLocation: hasGuardianLocation,
       })
     : undefined;
+
+  async function copyCoords() {
+    await Clipboard.setStringAsync(`${alert.lat}, ${alert.lon}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
 
   // Screen already sits under the stack header — don't add status-bar inset again
   // or this card can sit on top of the back control.
@@ -80,11 +88,31 @@ export function AlertDetailHeader({
           {place}
         </Text>
       ) : null}
-      <Text variant="muted" className="mt-0.5 text-xs">
-        {straightLineMeters !== undefined
-          ? `${formatDistance(straightLineMeters)} away`
-          : 'Waiting for GPS…'}
-      </Text>
+      <View className="mt-0.5 flex-row items-center gap-2">
+        <Text variant="muted" className="shrink text-xs">
+          {straightLineMeters !== undefined
+            ? `${formatDistance(straightLineMeters)} away`
+            : 'Waiting for GPS…'}
+        </Text>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="min-h-11 gap-1 px-2"
+          onPress={copyCoords}
+          accessibilityLabel={
+            copied ? 'Copied latitude and longitude' : 'Copy latitude and longitude'
+          }
+        >
+          <Ionicons
+            name={copied ? 'checkmark' : 'copy-outline'}
+            size={14}
+            color={COLORS.muted}
+          />
+          <Text variant="muted" className="text-xs">
+            {copied ? 'Copied' : 'Copy lat/lon'}
+          </Text>
+        </Button>
+      </View>
       {navigateLabel ? (
         <Text className="mt-1.5 text-sm font-bold text-destructive">{navigateLabel}</Text>
       ) : null}
