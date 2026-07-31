@@ -46,6 +46,7 @@ yarn-error.*
 
 # Local agent/planning notes (not for the repo)
 docs/superpowers/
+.scratch/
 
 # Firebase config (per-developer, download from Firebase console)
 google-services.json
