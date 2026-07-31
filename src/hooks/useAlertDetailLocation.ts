@@ -5,13 +5,13 @@ import type { LatLng } from '@/types/models';
 import { formatPlace } from '@/utils/formatPlace';
 
 /**
- * Guardian location for alert detail:
+ * Location + place for the alert detail screen:
  * - Quiet open (`placeAt`): ask permission, one position fix, reverse-geocode the fall.
  *   Denial is silent (header just omits place/distance).
  * - Navigate (`watch`): live GPS updates. Denial calls `onDenied` (in-app dialog).
  *   Stopping watch removes the subscription but keeps the last fix for header distance.
  */
-export function useGuardianLocation({
+export function useAlertDetailLocation({
   placeAt,
   watch,
   onDenied,
@@ -19,8 +19,8 @@ export function useGuardianLocation({
   placeAt?: LatLng;
   watch: boolean;
   onDenied?: () => void;
-}): { location?: LatLng; place?: string } {
-  const [location, setLocation] = useState<LatLng>();
+}): { guardianLocation?: LatLng; place?: string } {
+  const [guardianLocation, setGuardianLocation] = useState<LatLng>();
   const [place, setPlace] = useState<string>();
   const sub = useRef<Location.LocationSubscription>(null);
   const onDeniedRef = useRef(onDenied);
@@ -46,7 +46,7 @@ export function useGuardianLocation({
         accuracy: Location.Accuracy.Balanced,
       }).then((current) => {
         if (!cancelled) {
-          setLocation({
+          setGuardianLocation({
             latitude: current.coords.latitude,
             longitude: current.coords.longitude,
           });
@@ -93,7 +93,7 @@ export function useGuardianLocation({
           accuracy: Location.Accuracy.Balanced,
         });
         if (!cancelled) {
-          setLocation({
+          setGuardianLocation({
             latitude: current.coords.latitude,
             longitude: current.coords.longitude,
           });
@@ -106,7 +106,7 @@ export function useGuardianLocation({
       sub.current = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.Balanced, distanceInterval: 5 },
         (pos) => {
-          setLocation({
+          setGuardianLocation({
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
           });
@@ -125,5 +125,5 @@ export function useGuardianLocation({
     };
   }, [watch]);
 
-  return { location, place };
+  return { guardianLocation, place };
 }

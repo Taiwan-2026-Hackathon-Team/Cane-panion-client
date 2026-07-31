@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { fetchRoute, type Route } from '../api/routing';
-import type { LatLng } from '../types/models';
+import { fetchRoute, type Route } from '@/api/routing';
+import type { LatLng } from '@/types/models';
 import { distanceMeters } from '@/utils/geo';
 
 /** Refetch the road route only after the guardian moved this far. */

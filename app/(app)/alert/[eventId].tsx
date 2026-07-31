@@ -11,38 +11,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import type { Route } from '@/api/routing';
 import { getGuardianApi } from '@/api/client';
 import { AlertDetailHeader } from '@/components/AlertDetailHeader';
 import { SosMap } from '@/components/SosMap';
 import { CANE_PHONE_NUMBER, COLORS } from '@/constants';
 import { useAlert } from '@/hooks/useAlerts';
-import { useGuardianLocation } from '@/hooks/useGuardianLocation';
+import { useAlertDetailLocation } from '@/hooks/useAlertDetailLocation';
 import { useRoute } from '@/hooks/useRoute';
-import { distanceMeters, formatDistance } from '@/utils/geo';
-
-// The OSRM demo server's duration is car-profile; estimate walking at ~5 km/h.
-function formatWalkEta(routeMeters: number): string {
-  const min = Math.max(1, Math.round(routeMeters / 83));
-  return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${min % 60} min`;
-}
-
-function routeStatusLabel({
-  route,
-  routeFailed,
-  hasLocation,
-}: {
-  route?: Route;
-  routeFailed: boolean;
-  hasLocation: boolean;
-}): string {
-  if (route) {
-    return `${formatDistance(route.distanceMeters)} · ${formatWalkEta(route.distanceMeters)} walk`;
-  }
-  if (!hasLocation) return 'Getting your location…';
-  if (routeFailed) return 'Route unavailable';
-  return 'Finding route…';
-}
+import { distanceMeters } from '@/utils/geo';
 
 function callCane() {
   Linking.openURL(`tel:${CANE_PHONE_NUMBER}`).catch(() => {
@@ -61,7 +37,7 @@ export default function AlertScreen() {
   const fallLocation = alert
     ? { latitude: alert.lat, longitude: alert.lon }
     : undefined;
-  const { location, place } = useGuardianLocation({
+  const { guardianLocation, place } = useAlertDetailLocation({
     placeAt: fallLocation,
     watch: navigating,
     onDenied: () => {
@@ -73,7 +49,7 @@ export default function AlertScreen() {
     },
   });
   const { route, failed: routeFailed } = useRoute(
-    navigating ? location : undefined,
+    navigating ? guardianLocation : undefined,
     fallLocation,
   );
 
@@ -94,15 +70,16 @@ export default function AlertScreen() {
     );
   }
 
-  const straightLineMeters = location
-    ? distanceMeters(location, { latitude: alert.lat, longitude: alert.lon })
-    : undefined;
+  const straightLineMeters =
+    guardianLocation && fallLocation
+      ? distanceMeters(guardianLocation, fallLocation)
+      : undefined;
 
   return (
     <View className="flex-1">
       <SosMap
         alert={alert}
-        userLocation={navigating ? location : undefined}
+        userLocation={navigating ? guardianLocation : undefined}
         routeCoords={route?.coords}
         showStraightLineFallback={routeFailed}
       />
@@ -111,15 +88,10 @@ export default function AlertScreen() {
         alert={alert}
         place={place}
         straightLineMeters={straightLineMeters}
-        routeStatusLabel={
-          navigating
-            ? routeStatusLabel({
-                route,
-                routeFailed,
-                hasLocation: location !== undefined,
-              })
-            : undefined
-        }
+        navigating={navigating}
+        route={route}
+        routeFailed={routeFailed}
+        hasGuardianLocation={guardianLocation !== undefined}
         topInset={insets.top}
       />
 

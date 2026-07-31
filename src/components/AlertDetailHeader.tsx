@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
+import type { Route } from '@/api/routing';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { COLORS } from '@/constants';
@@ -10,19 +11,56 @@ import type { FallAlert } from '@/types/models';
 import { formatDistance } from '@/utils/geo';
 import { formatWhen } from '@/utils/formatWhen';
 
+// The OSRM demo server's duration is car-profile; estimate walking at ~5 km/h.
+function formatWalkEta(routeMeters: number): string {
+  const min = Math.max(1, Math.round(routeMeters / 83));
+  return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${min % 60} min`;
+}
+
+function routeStatusLabel({
+  route,
+  routeFailed,
+  hasLocation,
+}: {
+  route?: Route;
+  routeFailed: boolean;
+  hasLocation: boolean;
+}): string {
+  if (route) {
+    return `${formatDistance(route.distanceMeters)} · ${formatWalkEta(route.distanceMeters)} walk`;
+  }
+  if (!hasLocation) return 'Getting your location…';
+  if (routeFailed) return 'Route unavailable';
+  return 'Finding route…';
+}
+
 export function AlertDetailHeader({
   alert,
   place,
   straightLineMeters,
-  routeStatusLabel,
+  navigating,
+  route,
+  routeFailed,
+  hasGuardianLocation,
   topInset,
 }: {
   alert: FallAlert;
   place?: string;
   straightLineMeters?: number;
-  routeStatusLabel?: string;
+  navigating: boolean;
+  route?: Route;
+  routeFailed: boolean;
+  hasGuardianLocation: boolean;
   topInset: number;
 }) {
+  const navigateLabel = navigating
+    ? routeStatusLabel({
+        route,
+        routeFailed,
+        hasLocation: hasGuardianLocation,
+      })
+    : undefined;
+
   return (
     <View
       className="absolute left-3 right-3 rounded-[10px] border border-border bg-background/95 p-3"
@@ -50,8 +88,8 @@ export function AlertDetailHeader({
           {formatDistance(straightLineMeters)} away
         </Text>
       ) : null}
-      {routeStatusLabel ? (
-        <Text className="mt-1.5 text-sm font-bold text-destructive">{routeStatusLabel}</Text>
+      {navigateLabel ? (
+        <Text className="mt-1.5 text-sm font-bold text-destructive">{navigateLabel}</Text>
       ) : null}
     </View>
   );
