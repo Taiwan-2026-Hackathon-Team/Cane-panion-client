@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { fetchRoute, type Route } from '../api/routing';
 import type { LatLng } from '../types/models';
-import { distanceMeters } from './useGuardianLocation';
+import { distanceMeters } from '@/utils/geo';
 
 /** Refetch the road route only after the guardian moved this far. */
 const REFETCH_AFTER_M = 25;
@@ -19,7 +19,7 @@ const REFETCH_AFTER_M = 25;
  */
 export function useRoute(
   from: LatLng | undefined,
-  to: LatLng,
+  to: LatLng | undefined,
 ): { route?: Route; failed: boolean } {
   const [route, setRoute] = useState<Route>();
   const [failed, setFailed] = useState(false);
@@ -34,7 +34,7 @@ export function useRoute(
   }, []);
 
   useEffect(() => {
-    if (!from) {
+    if (!from || !to) {
       generation.current += 1;
       inFlight.current = false;
       lastOrigin.current = null;
@@ -49,8 +49,9 @@ export function useRoute(
 
     const gen = generation.current;
     const origin = from;
+    const destination = to;
     inFlight.current = true;
-    fetchRoute(origin, to)
+    fetchRoute(origin, destination)
       .then((r) => {
         if (gen !== generation.current) return;
         inFlight.current = false;
@@ -68,7 +69,7 @@ export function useRoute(
           return prev;
         });
       });
-  }, [from?.latitude, from?.longitude, to.latitude, to.longitude]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [from?.latitude, from?.longitude, to?.latitude, to?.longitude]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { route, failed };
 }
