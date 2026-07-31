@@ -3,26 +3,25 @@ import {
   ActivityIndicator,
   Alert as RNAlert,
   Linking,
-  Pressable,
-  StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getGuardianApi } from '../../../src/api/client';
-import { formatWhen } from '../../../src/components/AlertListItem';
-import { SosMap } from '../../../src/components/SosMap';
-import { StatusPill } from '../../../src/components/StatusPill';
-import { CANE_PHONE_NUMBER, COLORS } from '../../../src/constants';
-import { useAlert } from '../../../src/hooks/useAlerts';
+import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
+import { getGuardianApi } from '@/api/client';
+import { SosMap } from '@/components/SosMap';
+import { CANE_PHONE_NUMBER, COLORS } from '@/constants';
+import { useAlert } from '@/hooks/useAlerts';
 import {
   distanceMeters,
   formatDistance,
   useGuardianLocation,
-} from '../../../src/hooks/useGuardianLocation';
-import { useRoute } from '../../../src/hooks/useRoute';
+} from '@/hooks/useGuardianLocation';
+import { useRoute } from '@/hooks/useRoute';
+import { formatWhen } from '@/utils/formatWhen';
 
 // The OSRM demo server's duration is car-profile; estimate walking at ~5 km/h.
 function formatWalkEta(routeMeters: number): string {
@@ -41,6 +40,7 @@ function callCane() {
 
 export default function AlertScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
+  const insets = useSafeAreaInsets();
   const alert = useAlert(eventId);
   const [navigating, setNavigating] = useState(false);
   const { location } = useGuardianLocation(navigating, () => {
@@ -55,16 +55,18 @@ export default function AlertScreen() {
     { latitude: alert?.lat ?? 0, longitude: alert?.lon ?? 0 },
   );
 
-  // Viewing the alert marks it seen — this is what clears the red banner.
+  // Viewing the alert marks it seen.
   useEffect(() => {
     if (eventId) getGuardianApi().acknowledgeAlert(eventId).catch(() => {});
   }, [eventId]);
 
   if (!alert) {
     return (
-      <View style={styles.loading}>
+      <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator size="large" color={COLORS.danger} />
-        <Text style={styles.loadingText}>Loading alert…</Text>
+        <Text variant="muted" className="mt-2.5">
+          Loading alert…
+        </Text>
       </View>
     );
   }
@@ -81,7 +83,7 @@ export default function AlertScreen() {
         : 'Finding route…';
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1">
       <SosMap
         alert={alert}
         userLocation={navigating ? location : undefined}
@@ -89,101 +91,57 @@ export default function AlertScreen() {
         showStraightLineFallback={routeFailed}
       />
 
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Fall — {alert.deviceId}</Text>
-          <View style={styles.headerActions}>
-            <Pressable
-              style={styles.cameraButton}
-              onPress={() => router.push('/camera')}
-              hitSlop={8}
-            >
-              <Ionicons name="videocam" size={18} color={COLORS.danger} />
-            </Pressable>
-            <StatusPill status={alert.status} />
-          </View>
+      <View
+        className="absolute left-3 right-3 rounded-[10px] border border-border bg-background/95 p-3"
+        style={{ top: insets.top + 12 }}
+      >
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-bold text-foreground">Fall — {alert.deviceId}</Text>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-full border-destructive"
+            onPress={() => router.push('/camera')}
+          >
+            <Ionicons name="videocam" size={18} color={COLORS.danger} />
+          </Button>
         </View>
-        <Text style={styles.headerTime}>{formatWhen(alert.createdAt)}</Text>
-        <Text style={styles.headerCoords}>
+        <Text className="mt-1 text-[13px] text-foreground">{formatWhen(alert.createdAt)}</Text>
+        <Text variant="muted" className="mt-0.5 text-xs">
           {alert.lat.toFixed(6)}, {alert.lon.toFixed(6)}
         </Text>
-        {navigating && <Text style={styles.distance}>{distanceLabel}</Text>}
+        {navigating && (
+          <Text className="mt-1.5 text-sm font-bold text-destructive">{distanceLabel}</Text>
+        )}
       </View>
 
-      <View style={styles.footer}>
-        <Pressable style={[styles.button, styles.callButton]} onPress={callCane}>
+      <View
+        className="absolute left-3 right-3 flex-row gap-2.5"
+        style={{ bottom: insets.bottom + 24 }}
+      >
+        <Button
+          className="h-auto flex-1 rounded-[10px] py-3.5"
+          style={{ backgroundColor: COLORS.ok }}
+          onPress={callCane}
+        >
           <Ionicons name="call" size={18} color="#fff" />
-          <Text style={styles.callButtonText}>Call</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.button, navigating ? styles.navButtonActive : styles.navButton]}
+          <Text className="font-bold text-white">Call</Text>
+        </Button>
+        <Button
+          variant={navigating ? 'outline' : 'destructive'}
+          className="h-auto flex-1 rounded-[10px] py-3.5"
           onPress={() => setNavigating((v) => !v)}
         >
-          <Ionicons name="navigate" size={18} color={navigating ? COLORS.danger : '#fff'} />
-          <Text style={navigating ? styles.navButtonActiveText : styles.navButtonText}>
+          <Ionicons
+            name="navigate"
+            size={18}
+            color={navigating ? COLORS.danger : '#fff'}
+          />
+          <Text className={navigating ? 'font-bold text-destructive' : 'font-bold text-white'}>
             {navigating ? 'Stop' : 'Navigate'}
           </Text>
-        </Pressable>
+        </Button>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { marginTop: 10, color: COLORS.muted },
-  header: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    right: 12,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.cardBorder,
-  },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cameraButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-  headerTime: { marginTop: 4, color: COLORS.text, fontSize: 13 },
-  headerCoords: { marginTop: 2, color: COLORS.muted, fontSize: 12 },
-  distance: { marginTop: 6, color: COLORS.danger, fontWeight: '700', fontSize: 14 },
-  footer: {
-    position: 'absolute',
-    bottom: 24,
-    left: 12,
-    right: 12,
-    flexDirection: 'row',
-    gap: 10,
-  },
-  button: {
-    flex: 1,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  callButton: { backgroundColor: COLORS.ok },
-  callButtonText: { fontWeight: '700', color: '#fff' },
-  navButton: { backgroundColor: COLORS.danger },
-  navButtonText: { fontWeight: '700', color: '#fff' },
-  navButtonActive: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: COLORS.danger,
-  },
-  navButtonActiveText: { fontWeight: '700', color: COLORS.danger },
-});

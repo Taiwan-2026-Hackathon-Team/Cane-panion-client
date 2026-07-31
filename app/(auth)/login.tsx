@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
-import { toErrorMessage } from '@/src/api/fetch';
-import { useLoginMutation } from '@/src/auth/authMutations';
+import { toErrorMessage } from '@/api/fetch';
+import { useLoginMutation } from '@/auth/authMutations';
 
 export default function LoginScreen() {
   const loginMutation = useLoginMutation();

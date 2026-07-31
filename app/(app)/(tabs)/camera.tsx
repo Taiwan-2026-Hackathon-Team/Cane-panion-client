@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { COLORS } from '../../../src/constants';
+import { COLORS } from '@/constants';
 
 type FeedState = 'connecting' | 'snapshot' | 'refreshing';
 

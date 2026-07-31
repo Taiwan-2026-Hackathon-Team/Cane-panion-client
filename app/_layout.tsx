@@ -6,12 +6,12 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { PortalHost } from '@rn-primitives/portal';
 
-import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
-import { COLORS } from '../src/constants';
+import { AuthProvider, useAuth } from '@/auth/AuthProvider';
+import { COLORS } from '@/constants';
 import {
   initForegroundMessaging,
   useNotificationNavigation,
-} from '../src/notifications/handlers';
+} from '@/notifications/handlers';
 
 function AuthLoading() {
   return (

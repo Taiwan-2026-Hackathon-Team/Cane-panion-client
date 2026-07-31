@@ -4,11 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { getMessaging, getToken } from '@react-native-firebase/messaging';
 import { router, useFocusEffect } from 'expo-router';
 
-import type { LatLng } from '../../../src/types/models';
-import { COLORS, SOS_TOPIC } from '../../../src/constants';
-import { getHomeLocation } from '../../../src/store/settings';
-import { useAuth } from '@/src/auth/AuthProvider';
-import { useLogoutMutation } from '@/src/auth/authMutations';
+import { Button } from '@/components/ui/button';
+import { Text as UIText } from '@/components/ui/text';
+import { useAuth } from '@/auth/AuthProvider';
+import { useLogoutMutation } from '@/auth/authMutations';
+import type { LatLng } from '@/types/models';
+import { COLORS, SOS_TOPIC } from '@/constants';
+import { getHomeLocation } from '@/store/settings';
 
 const FUTURE_SETTINGS = [
   ['Haptic intensity', 'Buzz strength per motor'],
@@ -93,6 +95,22 @@ export default function SettingsScreen() {
         <Pressable style={styles.shareButton} onPress={() => Share.share({ message: token })}>
           <Text style={styles.shareButtonText}>Share token</Text>
         </Pressable>
+      )}
+
+      {__DEV__ && (
+        <Button
+          variant="outline"
+          className="mt-4"
+          onPress={() => {
+            void import('@/notifications/simulateFall').then(({ simulateFall }) =>
+              simulateFall(),
+            );
+          }}
+        >
+          <UIText variant="muted" className="font-semibold">
+            Simulate fall
+          </UIText>
+        </Button>
       )}
     </ScrollView>
   );

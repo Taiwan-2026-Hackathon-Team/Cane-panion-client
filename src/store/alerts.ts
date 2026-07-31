@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { ALERTS_STORAGE_KEY } from '../constants';
-import type { FallAlert, FallAlertPushData } from '../types/models';
+import { ALERTS_STORAGE_KEY } from '@/constants';
+import type { FallAlert, FallAlertPushData } from '@/types/models';
 
 /**
  * AsyncStorage-backed alert store. This is the single write path for alerts:
@@ -114,4 +114,18 @@ export function acknowledgeAlert(id: string): Promise<FallAlert | undefined> {
 
 export async function activeAlerts(): Promise<FallAlert[]> {
   return (await listAlerts()).filter((a) => a.status === 'active');
+}
+
+/** Split a list into Active vs History (acknowledged) for sectioned UI. */
+export function partitionAlerts(alerts: FallAlert[]): {
+  active: FallAlert[];
+  history: FallAlert[];
+} {
+  const active: FallAlert[] = [];
+  const history: FallAlert[] = [];
+  for (const alert of alerts) {
+    if (alert.status === 'active') active.push(alert);
+    else history.push(alert);
+  }
+  return { active, history };
 }

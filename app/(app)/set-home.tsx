@@ -5,13 +5,13 @@ import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 
-import type { LatLng } from '../../src/types/models';
-import { COLORS } from '../../src/constants';
+import type { LatLng } from '@/types/models';
+import { COLORS } from '@/constants';
 import {
   getHomeLocation,
   HOME_PICKER_FALLBACK,
   setHomeLocation,
-} from '../../src/store/settings';
+} from '@/store/settings';
 
 const PICKER_DELTA = 0.004;
 

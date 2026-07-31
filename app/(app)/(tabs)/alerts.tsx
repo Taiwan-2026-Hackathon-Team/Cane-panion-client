@@ -1,90 +1,79 @@
 import React from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { SectionList, type SectionListData, View } from 'react-native';
 
-import { AlertListItem } from '../../../src/components/AlertListItem';
-import { COLORS } from '../../../src/constants';
-import { useAlerts } from '../../../src/hooks/useAlerts';
-import { alertFromPushData, upsertAlert } from '../../../src/store/alerts';
-import { displaySosNotification } from '../../../src/notifications/handlers';
+import { Text } from '@/components/ui/text';
+import { AlertListItem } from '@/components/AlertListItem';
+import { useAlerts } from '@/hooks/useAlerts';
+import { partitionAlerts } from '@/store/alerts';
+import type { FallAlert } from '@/types/models';
 
-/** Dev-only: inject a fake fall through the exact same path a push takes. */
-async function simulateFall() {
-  const alert = alertFromPushData({
-    type: 'fall_sos',
-    eventId: `sim-${Date.now()}`,
-    deviceId: 'cane-panion-01',
-    lat: '14.599512',
-    lon: '120.984222',
-    createdAt: new Date().toISOString(),
-  });
-  if (alert) {
-    await upsertAlert(alert);
-    await displaySosNotification(alert);
-  }
+type AlertSection = {
+  title: string;
+  data: FallAlert[];
+};
+
+const listStyle = { flex: 1 } as const;
+const contentContainerStyle = { paddingBottom: 40, paddingHorizontal: 16 } as const;
+
+function keyExtractor(item: FallAlert) {
+  return item.id;
 }
 
-export default function AlertsScreen() {
-  const { alerts } = useAlerts();
-  const active = alerts.filter((a) => a.status === 'active');
-
+function renderItem({ item }: { item: FallAlert }) {
   return (
-    <View style={styles.container}>
-      {active.length > 0 && (
-        <Pressable
-          style={styles.banner}
-          onPress={() => router.push(`/alert/${active[0].id}`)}
-        >
-          <Text style={styles.bannerTitle}>
-            {active.length === 1 ? 'ACTIVE FALL ALERT' : `${active.length} ACTIVE FALL ALERTS`}
-          </Text>
-          <Text style={styles.bannerSubtitle}>
-            {active[0].deviceId} — tap to view location
-          </Text>
-        </Pressable>
-      )}
+    <AlertListItem
+      id={item.id}
+      deviceId={item.deviceId}
+      createdAt={item.createdAt}
+      status={item.status}
+    />
+  );
+}
 
-      <FlatList
-        data={alerts}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <AlertListItem alert={item} onPress={() => router.push(`/alert/${item.id}`)} />
-        )}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No fall alerts</Text>
-            <Text style={styles.emptyText}>
-              When the cane detects a fall, the alert appears here and as a push
-              notification.
-            </Text>
-          </View>
-        }
-      />
-
-      {__DEV__ && (
-        <Pressable style={styles.devButton} onPress={simulateFall}>
-          <Text style={styles.devButtonText}>Simulate fall (dev)</Text>
-        </Pressable>
-      )}
+function renderSectionHeader({
+  section,
+}: {
+  section: SectionListData<FallAlert, AlertSection>;
+}) {
+  return (
+    <View className="border-b border-border bg-background px-1 pb-2 pt-5">
+      <Text variant="muted" className="text-xs font-medium uppercase tracking-wide">
+        {section.title}
+      </Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  banner: { backgroundColor: COLORS.danger, padding: 14 },
-  bannerTitle: { color: '#fff', fontWeight: '800', fontSize: 15 },
-  bannerSubtitle: { color: '#ffd6d6', marginTop: 2, fontSize: 13 },
-  empty: { alignItems: 'center', padding: 40, marginTop: 60 },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: COLORS.text },
-  emptyText: { textAlign: 'center', color: COLORS.muted, marginTop: 8, lineHeight: 20 },
-  devButton: {
-    margin: 14,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    alignItems: 'center',
-  },
-  devButtonText: { color: COLORS.muted, fontWeight: '600' },
-});
+export default function AlertsScreen() {
+  const { alerts } = useAlerts();
+  const { active, history } = partitionAlerts(alerts);
+  const sections: AlertSection[] = [
+    ...(active.length > 0 ? [{ title: 'Active', data: active }] : []),
+    ...(history.length > 0 ? [{ title: 'History', data: history }] : []),
+  ];
+
+  if (sections.length === 0) {
+    return (
+      <View className="flex-1 items-center bg-background px-10 pt-24">
+        <Text className="text-base font-semibold text-foreground">No fall alerts</Text>
+        <Text variant="muted" className="mt-2 text-center leading-5">
+          When the cane detects a fall, the alert appears here and as a push notification.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-1 bg-background">
+      <SectionList
+        style={listStyle}
+        sections={sections}
+        keyExtractor={keyExtractor}
+        stickySectionHeadersEnabled={false}
+        contentContainerStyle={contentContainerStyle}
+        renderSectionHeader={renderSectionHeader}
+        renderItem={renderItem}
+      />
+    </View>
+  );
+}
