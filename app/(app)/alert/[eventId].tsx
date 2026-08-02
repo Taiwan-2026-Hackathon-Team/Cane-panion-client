@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   ActivityIndicator,
   Alert as RNAlert,
@@ -17,9 +17,9 @@ import { SosMap } from '@/components/SosMap';
 import { CANE_PHONE_NUMBER, COLORS } from '@/constants';
 import { useAlert } from '@/hooks/useAlerts';
 import { useAlertDetailLocation } from '@/hooks/useAlertDetailLocation';
-import { useRoute } from '@/hooks/useRoute';
 import { distanceMeters } from '@/utils/geo';
 import { leaveAlertDetail } from '@/utils/leaveAlertDetail';
+import { openWalkingDirections } from '@/utils/openWalkingDirections';
 
 function callCane() {
   Linking.openURL(`tel:${CANE_PHONE_NUMBER}`).catch(() => {
@@ -33,29 +33,13 @@ function callCane() {
 export default function AlertScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const { alert, ready } = useAlert(eventId);
-  const [navigating, setNavigating] = useState(false);
   const fallLocation = alert
     ? { latitude: alert.lat, longitude: alert.lon }
     : undefined;
-  const { guardianLocation, place } = useAlertDetailLocation({
-    placeAt: fallLocation,
-    watch: navigating,
-    onDenied: () => {
-      setNavigating(false);
-      RNAlert.alert(
-        'Location needed',
-        'Allow location access to navigate to the fall location.',
-      );
-    },
-  });
-  const { route, failed: routeFailed } = useRoute(
-    navigating ? guardianLocation : undefined,
-    fallLocation,
-  );
+  const { guardianLocation, place } = useAlertDetailLocation(fallLocation);
 
-  // Fresh alert → leave Navigate mode; viewing marks it seen.
+  // Viewing marks the alert seen.
   useEffect(() => {
-    setNavigating(false);
     if (eventId) getGuardianApi().markAlertSeen(eventId).catch(() => {});
   }, [eventId]);
 
@@ -103,23 +87,24 @@ export default function AlertScreen() {
       ? distanceMeters(guardianLocation, fallLocation)
       : undefined;
 
+  function navigateToFall() {
+    if (!fallLocation) return;
+    openWalkingDirections(fallLocation, guardianLocation).catch(() => {
+      RNAlert.alert(
+        'Cannot open maps',
+        'No maps app is available to show walking directions to the fall.',
+      );
+    });
+  }
+
   return (
     <View className="flex-1 overflow-hidden">
-      <SosMap
-        alert={alert}
-        userLocation={navigating ? guardianLocation : undefined}
-        routeCoords={route?.coords}
-        showStraightLineFallback={routeFailed}
-      />
+      <SosMap alert={alert} />
 
       <AlertDetailHeader
         alert={alert}
         place={place}
         straightLineMeters={straightLineMeters}
-        navigating={navigating}
-        route={route}
-        routeFailed={routeFailed}
-        hasGuardianLocation={guardianLocation !== undefined}
       />
 
       <View className="absolute bottom-6 left-3 right-3 flex-row gap-2.5">
@@ -132,18 +117,12 @@ export default function AlertScreen() {
           <Text className="font-bold text-white">Call</Text>
         </Button>
         <Button
-          variant={navigating ? 'outline' : 'destructive'}
+          variant="destructive"
           className="h-auto flex-1 rounded-[10px] py-3.5"
-          onPress={() => setNavigating((v) => !v)}
+          onPress={navigateToFall}
         >
-          <Ionicons
-            name="navigate"
-            size={18}
-            color={navigating ? COLORS.danger : '#fff'}
-          />
-          <Text className={navigating ? 'font-bold text-destructive' : 'font-bold text-white'}>
-            {navigating ? 'Stop' : 'Navigate'}
-          </Text>
+          <Ionicons name="navigate" size={18} color="#fff" />
+          <Text className="font-bold text-white">Navigate</Text>
         </Button>
       </View>
     </View>

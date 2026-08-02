@@ -1,51 +1,22 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Platform, StyleSheet } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
-import { COLORS } from '../constants';
-import type { FallAlert, LatLng } from '../types/models';
+import type { FallAlert } from '../types/models';
 
 /**
  * Full-bleed map centered on the fall location. Google on Android, Apple Maps
- * on iOS. When the guardian's position is provided (navigate mode), shows it
- * with a straight route line to the fall pin and keeps both in frame.
+ * on iOS. Walking directions are handed off to the platform maps app via
+ * Navigate — this preview only shows where the fall was reported.
+ *
+ * Android needs a real `android.config.googleMaps.apiKey` in app.json (rebuild
+ * after changing it) or the preview map may stay blank.
  */
-export function SosMap({
-  alert,
-  userLocation,
-  routeCoords,
-  showStraightLineFallback = false,
-}: {
-  alert: FallAlert;
-  userLocation?: LatLng;
-  /** Road-following path from the guardian to the fall pin. */
-  routeCoords?: LatLng[];
-  /** Draw a dashed straight line — only set when road routing failed. */
-  showStraightLineFallback?: boolean;
-}) {
-  const mapRef = useRef<MapView>(null);
-  const fallCoord: LatLng = { latitude: alert.lat, longitude: alert.lon };
-
-  useEffect(() => {
-    if (userLocation) {
-      const frame =
-        routeCoords && routeCoords.length >= 2
-          ? routeCoords
-          : [fallCoord, userLocation];
-      mapRef.current?.fitToCoordinates(frame, {
-        edgePadding: { top: 140, bottom: 140, left: 60, right: 60 },
-        animated: true,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userLocation?.latitude, userLocation?.longitude, routeCoords]);
-
+export function SosMap({ alert }: { alert: FallAlert }) {
   return (
     <MapView
-      ref={mapRef}
       style={StyleSheet.absoluteFill}
       provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-      showsUserLocation={Boolean(userLocation)}
       initialRegion={{
         latitude: alert.lat,
         longitude: alert.lon,
@@ -53,19 +24,12 @@ export function SosMap({
         longitudeDelta: 0.005,
       }}
     >
-      <Marker coordinate={fallCoord} title="Fall detected" description={alert.deviceId} pinColor="red" />
-      {userLocation && routeCoords && routeCoords.length >= 2 && (
-        <Polyline coordinates={routeCoords} strokeColor={COLORS.danger} strokeWidth={4} />
-      )}
-      {userLocation && !routeCoords && showStraightLineFallback && (
-        <Polyline
-          coordinates={[userLocation, fallCoord]}
-          geodesic
-          strokeColor={COLORS.danger}
-          strokeWidth={4}
-          lineDashPattern={[8, 6]}
-        />
-      )}
+      <Marker
+        coordinate={{ latitude: alert.lat, longitude: alert.lon }}
+        title="Fall detected"
+        description={alert.deviceId}
+        pinColor="red"
+      />
     </MapView>
   );
 }

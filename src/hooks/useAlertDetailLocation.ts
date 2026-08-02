@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 
 import type { LatLng } from '@/types/models';
 import { formatPlace } from '@/utils/formatPlace';
 
 const FIX_TIMEOUT_MS = 6000;
-const WATCH_SUBSCRIBE_TIMEOUT_MS = 5000;
 
 async function ensureForegroundPermission(): Promise<boolean> {
   const current = await Location.getForegroundPermissionsAsync();
@@ -38,26 +37,16 @@ async function getCurrentPositionOrTimeout(): Promise<Location.LocationObject | 
 }
 
 /**
- * Location + place for the alert detail screen.
- *
- * Guardian GPS: last-known (immediate paint) + timed current fix + live watch.
- * Emulators often hang on subscribe/fix — those paths time out so the UI
- * still progresses; a working mock location updates distance when callbacks land.
+ * Place label + guardian GPS for the alert detail screen.
+ * Last-known paints immediately; a timed current fix refreshes distance /
+ * optional maps origin. Emulators that hang on getCurrentPosition time out.
  */
-export function useAlertDetailLocation({
-  placeAt,
-  watch,
-  onDenied,
-}: {
-  placeAt?: LatLng;
-  watch: boolean;
-  onDenied?: () => void;
-}): { guardianLocation?: LatLng; place?: string } {
+export function useAlertDetailLocation(placeAt?: LatLng): {
+  guardianLocation?: LatLng;
+  place?: string;
+} {
   const [guardianLocation, setGuardianLocation] = useState<LatLng>();
   const [place, setPlace] = useState<string>();
-  const onDeniedRef = useRef(onDenied);
-  onDeniedRef.current = onDenied;
-  const subRef = useRef<Location.LocationSubscription | null>(null);
 
   useEffect(() => {
     if (!placeAt) {
@@ -94,57 +83,23 @@ export function useAlertDetailLocation({
 
     (async () => {
       const granted = await ensureForegroundPermission();
-      if (cancelled) return;
-      if (!granted) {
-        if (watch) onDeniedRef.current?.();
-        return;
-      }
+      if (cancelled || !granted) return;
 
-      // Immediate paint — may be stale until a live fix arrives.
       try {
         const last = await Location.getLastKnownPositionAsync();
         if (!cancelled && last) setGuardianLocation(coordsFrom(last));
       } catch {
-        // Continue.
+        // Continue to current fix.
       }
 
-      void getCurrentPositionOrTimeout().then((current) => {
-        if (!cancelled && current) setGuardianLocation(coordsFrom(current));
-      });
-
-      try {
-        const sub = await Promise.race([
-          Location.watchPositionAsync(
-            {
-              accuracy: Location.Accuracy.Balanced,
-              distanceInterval: watch ? 5 : 1,
-              timeInterval: watch ? 2000 : 1000,
-              mayShowUserSettingsDialog: true,
-            },
-            (pos) => {
-              setGuardianLocation(coordsFrom(pos));
-            },
-          ),
-          new Promise<null>((resolve) => {
-            setTimeout(() => resolve(null), WATCH_SUBSCRIBE_TIMEOUT_MS);
-          }),
-        ]);
-        if (cancelled) {
-          sub?.remove();
-          return;
-        }
-        if (sub) subRef.current = sub;
-      } catch {
-        // Live watch unavailable; last-known / one-shot may still have painted.
-      }
+      const current = await getCurrentPositionOrTimeout();
+      if (!cancelled && current) setGuardianLocation(coordsFrom(current));
     })();
 
     return () => {
       cancelled = true;
-      subRef.current?.remove();
-      subRef.current = null;
     };
-  }, [placeAt?.latitude, placeAt?.longitude, watch]);
+  }, [placeAt?.latitude, placeAt?.longitude]);
 
   return { guardianLocation, place };
 }

@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 
-import type { Route } from '@/api/routing';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { COLORS } from '@/constants';
@@ -12,54 +11,16 @@ import type { FallAlert } from '@/types/models';
 import { formatDistance } from '@/utils/geo';
 import { formatWhen } from '@/utils/formatWhen';
 
-// The OSRM demo server's duration is car-profile; estimate walking at ~5 km/h.
-function formatWalkEta(routeMeters: number): string {
-  const min = Math.max(1, Math.round(routeMeters / 83));
-  return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${min % 60} min`;
-}
-
-function routeStatusLabel({
-  route,
-  routeFailed,
-  hasLocation,
-}: {
-  route?: Route;
-  routeFailed: boolean;
-  hasLocation: boolean;
-}): string {
-  if (route) {
-    return `${formatDistance(route.distanceMeters)} walk · ${formatWalkEta(route.distanceMeters)}`;
-  }
-  if (!hasLocation) return 'Getting your location…';
-  if (routeFailed) return 'Route unavailable';
-  return 'Finding route…';
-}
-
 export function AlertDetailHeader({
   alert,
   place,
   straightLineMeters,
-  navigating,
-  route,
-  routeFailed,
-  hasGuardianLocation,
 }: {
   alert: FallAlert;
   place?: string;
   straightLineMeters?: number;
-  navigating: boolean;
-  route?: Route;
-  routeFailed: boolean;
-  hasGuardianLocation: boolean;
 }) {
   const [copied, setCopied] = useState(false);
-  const navigateLabel = navigating
-    ? routeStatusLabel({
-        route,
-        routeFailed,
-        hasLocation: hasGuardianLocation,
-      })
-    : undefined;
 
   async function copyCoords() {
     await Clipboard.setStringAsync(`${alert.lat}, ${alert.lon}`);
@@ -89,13 +50,11 @@ export function AlertDetailHeader({
         </Text>
       ) : null}
       <View className="mt-0.5 flex-row items-center gap-2">
-        {route ? null : (
-          <Text variant="muted" className="shrink text-xs">
-            {straightLineMeters !== undefined
-              ? `${formatDistance(straightLineMeters)} straight line`
-              : 'Waiting for GPS…'}
-          </Text>
-        )}
+        <Text variant="muted" className="shrink text-xs">
+          {straightLineMeters !== undefined
+            ? `${formatDistance(straightLineMeters)} straight line`
+            : 'Waiting for GPS…'}
+        </Text>
         <Button
           variant="ghost"
           size="sm"
@@ -113,9 +72,6 @@ export function AlertDetailHeader({
           </Text>
         </Button>
       </View>
-      {navigateLabel ? (
-        <Text className="mt-1.5 text-sm font-bold text-destructive">{navigateLabel}</Text>
-      ) : null}
     </View>
   );
 }
