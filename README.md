@@ -1,6 +1,6 @@
-# Cane-panion Guardian App
+# Canepanion Guardian App
 
-React Native (Expo) companion app for the Cane-panion smart cane. Guardians
+React Native (Expo) companion app for the Canepanion smart cane. Guardians
 receive a push notification when the cane detects a fall and see the location
 on a map, with alert history and acknowledge.
 
